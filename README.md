@@ -1,2 +1,5 @@
 # Master-Thesis-AI
 Using Amortized Bayesian Inference to Simulate Learning of Chord Types in Music
+
+Interacting with music requires us to make inferences on several levels. When listening to a piece of music, we infer its structure. After listening to many pieces, we infer general regularities, i.e. we learn. Bayesian inference is a useful formalism for making these inferences in a principled way, and is usedto model inferences in cognition in general. However, exact Bayesian inference it is also known tobe intractable in the general case so approximate inference methods such as MCMC and variational inference are needed. This project applies Bayesian inference to the problem of learning chord types and their properties. The project builds on an existing model for the supervised case that is implemented as a probabilistic program using variational inference. In the unsupervised case, however, standard variational inference fails. The goal of this project is to solve the unsupervisedinference problem using amortized inference, which is an extension of variational inference that
+uses deep learning
