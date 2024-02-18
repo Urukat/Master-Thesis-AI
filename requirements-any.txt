@@ -1,0 +1,12 @@
+ipython
+ipykernel
+numpy
+pandas
+torch
+matplotlib
+seaborn
+pitchtypes
+tqdm
+music21
+pyro-ppl
+scipy
