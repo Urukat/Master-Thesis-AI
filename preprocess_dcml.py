@@ -96,72 +96,127 @@ def load_dfs(corpus, piece):
 # extracting chords
 # -----------------
 
-def get_chords(notes, harmonies):
+# def get_chords(notes, harmonies):
+#     """
+#     Computes chords as label x note pairs for a piece (given by its notes and chord labels).
+#     Pairs that belong to the same chord get the same id, starting from id_offset.
+#     Returns the dataframe of chords and the highest used id.
+#     """
+#     key = name2tpc(harmonies.globalkey[0])
+#
+#     # setup the columns of the result dataframe
+#     chordids = np.empty(0, dtype=int)
+#     labels   = np.empty(0, dtype=str)
+#     fifths   = np.empty(0, dtype=int)
+#     types    = np.empty(0, dtype=str)
+#     # running id counter
+#     current_id = 0
+#
+#     # for checking whether the chord label is empty at some point
+#     chord_is_null = harmonies.chord.isnull()
+#
+#     # iterate over all harmonies
+#     for i, ih in enumerate(harmonies.index):
+#         # chord label empty or '@none'? then skip
+#         if chord_is_null[ih] or harmonies.chord[ih] == '@none':
+#             continue
+#
+#         # get info about the current harmony
+#         on = harmonies.total_onset[ih]
+#         off = harmonies.total_offset[ih]
+#         label = harmonies.actual_chord_type[ih]
+#         root = harmonies.root[ih] + key
+#
+#         # compute the corresponding notes, their pitches, and their note types
+#         inotes = (notes.total_offset > on) & (notes.total_onset < off)
+#         pitches = notes.tpc[inotes].values - root
+#         chord_tones = chord_types[label]
+#         note_types = [notetype(p, pitches, chord_tones) for p in pitches]
+#         if(len(pitches) == 0):
+#             continue
+#
+#         # add everything to the dataframe columns
+#         chordids = np.append(chordids, np.repeat(current_id, len(pitches)))
+#         labels   = np.append(labels, np.repeat(label, len(pitches)))
+#         fifths   = np.append(fifths, pitches)
+#         types    = np.append(types, note_types)
+#         current_id += 1
+#
+#     # create the result dataframe
+#     chords_df = pd.DataFrame({
+#         'chordid': chordids,
+#         'label': labels,
+#         'fifth': fifths,
+#         'type': types})
+#     return chords_df, current_id # current_id = number of chords
+
+def get_chords(notes, harmonies, filename):
     """
     Computes chords as label x note pairs for a piece (given by its notes and chord labels).
     Pairs that belong to the same chord get the same id, starting from id_offset.
     Returns the dataframe of chords and the highest used id.
+    Now includes 'onset' and 'filename' information for each chord.
     """
     key = name2tpc(harmonies.globalkey[0])
 
-    # setup the columns of the result dataframe
     chordids = np.empty(0, dtype=int)
-    labels   = np.empty(0, dtype=str)
-    fifths   = np.empty(0, dtype=int)
-    types    = np.empty(0, dtype=str)
-    # running id counter
+    labels = np.empty(0, dtype=str)
+    fifths = np.empty(0, dtype=int)
+    types = np.empty(0, dtype=str)
+    onsets = np.empty(0, dtype=float)
+    filenames = np.empty(0, dtype=str)
     current_id = 0
 
-    # for checking whether the chord label is empty at some point
     chord_is_null = harmonies.chord.isnull()
 
-    # iterate over all harmonies
     for i, ih in enumerate(harmonies.index):
-        # chord label empty or '@none'? then skip
         if chord_is_null[ih] or harmonies.chord[ih] == '@none':
             continue
 
-        # get info about the current harmony
         on = harmonies.total_onset[ih]
         off = harmonies.total_offset[ih]
         label = harmonies.actual_chord_type[ih]
         root = harmonies.root[ih] + key
 
-        # compute the corresponding notes, their pitches, and their note types
         inotes = (notes.total_offset > on) & (notes.total_onset < off)
         pitches = notes.tpc[inotes].values - root
         chord_tones = chord_types[label]
         note_types = [notetype(p, pitches, chord_tones) for p in pitches]
-        if(len(pitches) == 0):
+        if len(pitches) == 0:
             continue
 
-        # add everything to the dataframe columns
         chordids = np.append(chordids, np.repeat(current_id, len(pitches)))
-        labels   = np.append(labels, np.repeat(label, len(pitches)))
-        fifths   = np.append(fifths, pitches)
-        types    = np.append(types, note_types)
+        labels = np.append(labels, np.repeat(label, len(pitches)))
+        fifths = np.append(fifths, pitches)
+        types = np.append(types, note_types)
+        onsets = np.append(onsets, np.repeat(on, len(pitches)))
+        filenames = np.append(filenames, np.repeat(filename, len(pitches)))
         current_id += 1
 
-    # create the result dataframe
     chords_df = pd.DataFrame({
         'chordid': chordids,
         'label': labels,
         'fifth': fifths,
-        'type': types})
-    return chords_df, current_id # current_id = number of chords
+        'type': types,
+        'onset': onsets,
+        'filename': filenames
+    })
+    return chords_df, current_id
+
 
 # processing files
 # ----------------
 
 def get_chords_from_piece(piece):
     """
-    Same as get_chords, but takes a corpus subdirectory and a piece id
+    Same as get_chords, but takes a corpus subdirectory and a piece id.
+    Includes filename in the information passed to get_chords.
     """
     folder, file = piece
     name = f"{folder} {file}"
     try:
         notes, harmonies = load_dfs(folder, file)
-        chords, n_chords = get_chords(notes, harmonies)
+        chords, n_chords = get_chords(notes, harmonies, name)
         return chords, n_chords, name
     except FileNotFoundError:
         print(f'file not found for {name}')
@@ -175,7 +230,6 @@ def get_chords_from_piece(piece):
     except Exception as e:
         print(f'error while processing {name}:\n{e}')
         return None
-        #raise Exception(f"failed file: {folder} {file}")
 
 def get_chords_from_files(filelist):
     """
@@ -233,5 +287,5 @@ if __name__ == "__main__":
     print("extracting chords from pieces...")
     all_chords = get_chords_from_files(pieces)
     print("writing chords...")
-    all_chords.to_csv(Path('data', 'dcml.tsv'), sep='\t', index=False)
+    all_chords.to_csv(Path('data', 'dcml2.tsv'), sep='\t', index=False)
     print("done.")
