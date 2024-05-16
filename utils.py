@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from fractions import Fraction as frac
 import os.path as path
 import pitchtypes as pt
-import math
+import re
 
 # loading dcml corpus data
 # ------------------------
@@ -86,6 +86,44 @@ def load_dcml_tsv(corpusdir, piece, kind):
 def name2tpc(name):
     pitch = name[0].upper() + name[1:]
     return pt.SpelledPitchClass(pitch).fifths()
+
+
+r_numeral = re.compile(
+    r"(?P<acc>b*|\#*)(?P<num>VII|VI|V|IV|III|II|I)",
+    re.IGNORECASE
+)
+
+NUMERALS = {
+    "i": 0,
+    "ii": 1,
+    "iii": 2,
+    "iv": 3,
+    "v": 4,
+    "vi": 5,
+    "vii": 6,
+}
+
+MAJOR = [pt.SpelledIntervalClass(s)
+         for s in ["P1", "M2", "M3", "P4", "P5", "M6", "M7"]]
+
+MINOR = [pt.SpelledIntervalClass(s)
+         for s in ["P1", "M2", "m3", "P4", "P5", "m6", "m7"]]
+
+
+def numeral2tic(label, major):
+    m = r_numeral.match(label)
+    # accidentals
+    accs = m.group("acc")
+    if len(accs) == 0:
+        mod = pt.SpelledIntervalClass.unison()
+    elif accs[0] == '#':
+        mod = pt.SpelledIntervalClass.chromatic_semitone() * len(accs)
+    else:
+        mod = - pt.SpelledIntervalClass.chromatic_semitone() * len(accs)
+    # numeral
+    degree = NUMERALS[m.group("num").lower()]
+    interval = MAJOR[degree] if major else MINOR[degree]
+    return (interval + mod).fifths()
 
 # data preprocessing
 # ------------------
