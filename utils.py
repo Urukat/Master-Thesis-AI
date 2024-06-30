@@ -151,7 +151,8 @@ def notetype(pitch, pitches, chordtones):
     
     if not hasneighbour: # if there is no identifiable neighbour, tone has to be chord tone
         return 'chordtone'
-    elif pitch in chordtones and not hasctneighbour:
+    elif pitch in chordtones and not hasctneighbour: # comment this out if using two-stage original model
+    # elif pitch in chordtones: # use this code for two stage original model
         return 'chordtone'
     elif not pitch in chordtones and hasctneighbour:
         return 'ornament'
